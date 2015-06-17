@@ -1,0 +1,42 @@
+
+<project name="build" default="all">
+
+	<property name="src.dir"     	location="src"/>
+    <property name="build.dir"   	location="build"/>
+    <property name="classes.dir" 	location="bin"/>
+
+	
+	<target name="init">
+		<echo>Java ${java.version}</echo>
+		<echo>${ant.version}</echo> 
+		<echo>${os.name} ${os.version} ${os.arch}</echo>   	
+	</target>
+				
+		
+	
+	<target name="clean" depends="init">
+		<delete dir="${classes.dir}" />
+		<delete dir="${build.dir}" />		
+		<mkdir dir="${classes.dir}"/>
+		<mkdir dir="${build.dir}"/>
+	</target>
+	
+		
+				
+	<target name="compile" depends="clean">
+    	<javac includeantruntime="false" srcdir="${src.dir}" destdir="${classes.dir}" source="1.6" target="1.6" />
+	</target>
+			
+	
+	
+	<target name="jar" depends="compile">
+		<jar destfile="${build.dir}/lossless.jar" basedir="${classes.dir}" duplicate="preserve" />
+	</target>
+
+	
+		
+	<target name="all" depends="jar">
+		<echo>Done!</echo>
+	</target>
+
+</project>
