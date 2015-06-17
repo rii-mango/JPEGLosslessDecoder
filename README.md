@@ -1,6 +1,6 @@
 JPEGLosslessDecoder
 =====
-A common DICOM compression format is JPEG lossless.  This format is generally not supported in standard JPEG decoder libraries. 
+A common DICOM compression format is JPEG Lossless.  This format is generally not supported in standard JPEG decoder libraries. 
 
 This decoder can read the following DICOM transfer syntaxes:
 
