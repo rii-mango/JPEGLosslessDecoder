@@ -16,7 +16,7 @@ int[] decompressedData = decoder.decode();
 ###Acknowledgments
 This library was originally written by Helmut Dersch, later released by JNode.  I added support for selection values 2 to 7 along with some other minor changes.
 
-### Build
+### Building
 ```unix
 ant build.xml
 ```
