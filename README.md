@@ -13,10 +13,10 @@ JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(compressedBytes);
 int[] decompressedData = decoder.decode();
 ```
 
-###Acknowledgments
-This library was originally written by Helmut Dersch, later released by JNode.  I added support for selection values 2 to 7 along with some other minor changes.
-
 ### Building
 ```unix
 ant build.xml
 ```
+
+###Acknowledgments
+This library was originally written by Helmut Dersch, later released by JNode.  I added support for selection values 2 to 7 along with some other minor changes.
