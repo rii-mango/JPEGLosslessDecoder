@@ -59,11 +59,14 @@ public class JPEGLosslessDecoder implements DataStream {
 	private int xLoc;
 	private int yLoc;
 	private int[] outputData;
+	private int[] outputRedData;
+	private int[] outputGreenData;
+	private int[] outputBlueData;
 
 	private static final int IDCT_P[] = { 0, 5, 40, 16, 45, 2, 7, 42, 21, 56, 8, 61, 18, 47, 1, 4, 41, 23, 58, 13, 32, 24, 37, 10, 63, 17, 44, 3, 6, 43, 20,
-		57, 15, 34, 29, 48, 53, 26, 39, 9, 60, 19, 46, 22, 59, 12, 33, 31, 50, 55, 25, 36, 11, 62, 14, 35, 28, 49, 52, 27, 38, 30, 51, 54 };
+			57, 15, 34, 29, 48, 53, 26, 39, 9, 60, 19, 46, 22, 59, 12, 33, 31, 50, 55, 25, 36, 11, 62, 14, 35, 28, 49, 52, 27, 38, 30, 51, 54 };
 	private static final int TABLE[] = { 0, 1, 5, 6, 14, 15, 27, 28, 2, 4, 7, 13, 16, 26, 29, 42, 3, 8, 12, 17, 25, 30, 41, 43, 9, 11, 18, 24, 31, 40, 44, 53,
-		10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47, 50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63 };
+			10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47, 50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63 };
 
 	public static final int MAX_HUFFMAN_SUBTREE = 50;
 	public static final int MSB = 0x80000000;
@@ -80,10 +83,10 @@ public class JPEGLosslessDecoder implements DataStream {
 
 
 
-	public int[] decode() throws IOException {
+	public int[][] decode() throws IOException {
 		int current, scanNum = 0;
 		final int pred[] = new int[10];
-		int[] outputRef = null;
+		int[][] outputRef = null;
 
 		xLoc = 0;
 		yLoc = 0;
@@ -209,8 +212,21 @@ public class JPEGLosslessDecoder implements DataStream {
 
 			xDim = frame.getDimX();
 			yDim = frame.getDimY();
-			outputData = new int[xDim * yDim];
-			outputRef = outputData;
+
+			outputRef = new int[numComp][];
+
+			if (numComp == 1) {
+				outputData = new int[xDim * yDim];
+				outputRef[0] = outputData;
+			} else {
+				outputRedData = new int[xDim * yDim]; // not a good use of memory, but I had trouble packing bytes into int.  some values exceeded 255.
+				outputGreenData = new int[xDim * yDim];
+				outputBlueData = new int[xDim * yDim];
+
+				outputRef[0] = outputRedData;
+				outputRef[1] = outputGreenData;
+				outputRef[2] = outputBlueData;
+			}
 
 			scanNum++;
 
@@ -288,87 +304,139 @@ public class JPEGLosslessDecoder implements DataStream {
 
 
 	private int decode(final int prev[], final int temp[], final int index[]) throws IOException {
+		if (numComp == 1) {
+			return decodeSingle(prev, temp, index);
+		} else if (numComp == 3) {
+			return decodeRGB(prev, temp, index);
+		} else {
+			return -1;
+		}
+	}
+
+
+
+	private int decodeSingle(final int prev[], final int temp[], final int index[]) throws IOException {
 		switch (selection) {
 			case 2:
-				prev[0] = getPreviousY();
+				prev[0] = getPreviousY(outputData);
 				break;
 			case 3:
-				prev[0] = getPreviousXY();
+				prev[0] = getPreviousXY(outputData);
 				break;
 			case 4:
-				prev[0] = (getPreviousX() + getPreviousY()) - getPreviousXY();
+				prev[0] = (getPreviousX(outputData) + getPreviousY(outputData)) - getPreviousXY(outputData);
 				break;
 			case 5:
-				prev[0] = getPreviousX() + ((getPreviousY() - getPreviousXY()) >> 1);
+				prev[0] = getPreviousX(outputData) + ((getPreviousY(outputData) - getPreviousXY(outputData)) >> 1);
 				break;
 			case 6:
-				prev[0] = getPreviousY() + ((getPreviousX() - getPreviousXY()) >> 1);
+				prev[0] = getPreviousY(outputData) + ((getPreviousX(outputData) - getPreviousXY(outputData)) >> 1);
 				break;
 			case 7:
-				prev[0] = (int) (((long) getPreviousX() + getPreviousY()) / 2);
+				prev[0] = (int) (((long) getPreviousX(outputData) + getPreviousY(outputData)) / 2);
 				break;
 			default:
-				prev[0] = getPreviousX();
+				prev[0] = getPreviousX(outputData);
 				break;
 		}
 
-		if (numComp > 1) {
-			int value, actab[], dctab[];
-			int qtab[];
+		for (int i = 0; i < nBlock[0]; i++) {
+			final int value = getHuffmanValue(dcTab[0], temp, index);
+			if (value >= 0xFF00) {
+				return value;
+			}
 
-			for (int ctrC = 0; ctrC < numComp; ctrC++) {
-				qtab = qTab[ctrC];
-				actab = acTab[ctrC];
-				dctab = dcTab[ctrC];
-				for (int i = 0; i < nBlock[ctrC]; i++) {
-					for (int k = 0; k < IDCT_Source.length; k++) {
-						IDCT_Source[k] = 0;
-					}
+			prev[0] += getn(prev, value, temp, index);
+		}
 
-					value = getHuffmanValue(dctab, temp, index);
+		return 0;
+	}
+
+
+
+	private int decodeRGB(final int prev[], final int temp[], final int index[]) throws IOException {
+		switch (selection) {
+			case 2:
+				prev[0] = getPreviousY(outputRedData);
+				prev[1] = getPreviousY(outputGreenData);
+				prev[2] = getPreviousY(outputBlueData);
+				break;
+			case 3:
+				prev[0] = getPreviousXY(outputRedData);
+				prev[1] = getPreviousXY(outputGreenData);
+				prev[2] = getPreviousXY(outputBlueData);
+				break;
+			case 4:
+				prev[0] = (getPreviousX(outputRedData) + getPreviousY(outputRedData)) - getPreviousXY(outputRedData);
+				prev[1] = (getPreviousX(outputGreenData) + getPreviousY(outputGreenData)) - getPreviousXY(outputGreenData);
+				prev[2] = (getPreviousX(outputBlueData) + getPreviousY(outputBlueData)) - getPreviousXY(outputBlueData);
+				break;
+			case 5:
+				prev[0] = getPreviousX(outputRedData) + ((getPreviousY(outputRedData) - getPreviousXY(outputRedData)) >> 1);
+				prev[1] = getPreviousX(outputGreenData) + ((getPreviousY(outputGreenData) - getPreviousXY(outputGreenData)) >> 1);
+				prev[2] = getPreviousX(outputBlueData) + ((getPreviousY(outputBlueData) - getPreviousXY(outputBlueData)) >> 1);
+				break;
+			case 6:
+				prev[0] = getPreviousY(outputRedData) + ((getPreviousX(outputRedData) - getPreviousXY(outputRedData)) >> 1);
+				prev[1] = getPreviousY(outputGreenData) + ((getPreviousX(outputGreenData) - getPreviousXY(outputGreenData)) >> 1);
+				prev[2] = getPreviousY(outputBlueData) + ((getPreviousX(outputBlueData) - getPreviousXY(outputBlueData)) >> 1);
+				break;
+			case 7:
+				prev[0] = (int) (((long) getPreviousX(outputRedData) + getPreviousY(outputRedData)) / 2);
+				prev[1] = (int) (((long) getPreviousX(outputGreenData) + getPreviousY(outputGreenData)) / 2);
+				prev[2] = (int) (((long) getPreviousX(outputBlueData) + getPreviousY(outputBlueData)) / 2);
+				break;
+			default:
+				prev[0] = getPreviousX(outputRedData);
+				prev[1] = getPreviousX(outputGreenData);
+				prev[2] = getPreviousX(outputBlueData);
+				break;
+		}
+
+		int value, actab[], dctab[];
+		int qtab[];
+
+		for (int ctrC = 0; ctrC < numComp; ctrC++) {
+			qtab = qTab[ctrC];
+			actab = acTab[ctrC];
+			dctab = dcTab[ctrC];
+			for (int i = 0; i < nBlock[ctrC]; i++) {
+				for (int k = 0; k < IDCT_Source.length; k++) {
+					IDCT_Source[k] = 0;
+				}
+
+				value = getHuffmanValue(dctab, temp, index);
+
+				if (value >= 0xFF00) {
+					return value;
+				}
+
+				prev[ctrC] = IDCT_Source[0] = prev[ctrC] + getn(index, value, temp, index);
+				IDCT_Source[0] *= qtab[0];
+
+				for (int j = 1; j < 64; j++) {
+					value = getHuffmanValue(actab, temp, index);
 
 					if (value >= 0xFF00) {
 						return value;
 					}
 
-					prev[ctrC] = IDCT_Source[0] = prev[ctrC] + getn(index, value, temp, index);
-					IDCT_Source[0] *= qtab[0];
+					j += (value >> 4);
 
-					for (int j = 1; j < 64; j++) {
-						value = getHuffmanValue(actab, temp, index);
-
-						if (value >= 0xFF00) {
-							return value;
+					if ((value & 0x0F) == 0) {
+						if ((value >> 4) == 0) {
+							break;
 						}
-
-						j += (value >> 4);
-
-						if ((value & 0x0F) == 0) {
-							if ((value >> 4) == 0) {
-								break;
-							}
-						} else {
-							IDCT_Source[IDCT_P[j]] = getn(index, value & 0x0F, temp, index) * qtab[j];
-						}
+					} else {
+						IDCT_Source[IDCT_P[j]] = getn(index, value & 0x0F, temp, index) * qtab[j];
 					}
-
-					scaleIDCT(DU[ctrC][i]);
-				}
-			}
-
-			return 0;
-		} else {
-			for (int i = 0; i < nBlock[0]; i++) {
-				final int value = getHuffmanValue(dcTab[0], temp, index);
-				if (value >= 0xFF00) {
-					return value;
 				}
 
-				prev[0] += getn(prev, value, temp, index);
+				scaleIDCT(DU[ctrC][i]);
 			}
-
-			return 0;
 		}
+
+		return 0;
 	}
 
 
@@ -491,7 +559,7 @@ public class JPEGLosslessDecoder implements DataStream {
 			}
 
 			result = temp[0] >> index[0];
-				temp[0] &= (mask >> (16 - index[0]));
+			temp[0] &= (mask >> (16 - index[0]));
 		} else {
 			temp[0] <<= 8;
 			input = get8();
@@ -536,7 +604,7 @@ public class JPEGLosslessDecoder implements DataStream {
 			}
 
 			result = temp[0] >> index[0];
-				temp[0] &= (mask >> (16 - index[0]));
+			temp[0] &= (mask >> (16 - index[0]));
 		}
 
 		if (result < (one << (n - 1))) {
@@ -548,11 +616,11 @@ public class JPEGLosslessDecoder implements DataStream {
 
 
 
-	private int getPreviousX() {
+	private int getPreviousX(final int data[]) {
 		if (xLoc > 0) {
-			return outputData[((yLoc * xDim) + xLoc) - 1];
+			return data[((yLoc * xDim) + xLoc) - 1];
 		} else if (yLoc > 0) {
-			return getPreviousY();
+			return getPreviousY(data);
 		} else {
 			return (1 << (frame.getPrecision() - 1));
 		}
@@ -560,21 +628,21 @@ public class JPEGLosslessDecoder implements DataStream {
 
 
 
-	private int getPreviousXY() {
+	private int getPreviousXY(final int data[]) {
 		if ((xLoc > 0) && (yLoc > 0)) {
-			return outputData[(((yLoc - 1) * xDim) + xLoc) - 1];
+			return data[(((yLoc - 1) * xDim) + xLoc) - 1];
 		} else {
-			return getPreviousY();
+			return getPreviousY(data);
 		}
 	}
 
 
 
-	private int getPreviousY() {
+	private int getPreviousY(final int data[]) {
 		if (yLoc > 0) {
-			return outputData[((yLoc - 1) * xDim) + xLoc];
+			return data[((yLoc - 1) * xDim) + xLoc];
 		} else {
-			return getPreviousX();
+			return getPreviousX(data);
 		}
 	}
 
@@ -587,8 +655,34 @@ public class JPEGLosslessDecoder implements DataStream {
 
 
 	private void output(final int PRED[]) {
+		if (numComp == 1) {
+			outputSingle(PRED);
+		} else {
+			outputRGB(PRED);
+		}
+	}
+
+
+
+	private void outputSingle(final int PRED[]) {
 		if ((xLoc < xDim) && (yLoc < yDim)) {
-			outputData[(yLoc * xDim) + xLoc] = PRED[0];
+			outputData[(yLoc * xDim) + xLoc] = ((PRED[0] & 0xFF) | ((PRED[1] & 0xFF) << 8) | ((PRED[2] & 0xFF) << 16));
+			xLoc++;
+
+			if (xLoc >= xDim) {
+				yLoc++;
+				xLoc = 0;
+			}
+		}
+	}
+
+
+
+	private void outputRGB(final int PRED[]) {
+		if ((xLoc < xDim) && (yLoc < yDim)) {
+			outputRedData[(yLoc * xDim) + xLoc] = PRED[0];
+			outputGreenData[(yLoc * xDim) + xLoc] = PRED[1];
+			outputBlueData[(yLoc * xDim) + xLoc] = PRED[2];
 
 			xLoc++;
 
