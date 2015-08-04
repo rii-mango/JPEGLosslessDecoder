@@ -666,7 +666,7 @@ public class JPEGLosslessDecoder implements DataStream {
 
 	private void outputSingle(final int PRED[]) {
 		if ((xLoc < xDim) && (yLoc < yDim)) {
-			outputData[(yLoc * xDim) + xLoc] = ((PRED[0] & 0xFF) | ((PRED[1] & 0xFF) << 8) | ((PRED[2] & 0xFF) << 16));
+			outputData[(yLoc * xDim) + xLoc] = PRED[0];
 			xLoc++;
 
 			if (xLoc >= xDim) {
@@ -683,7 +683,6 @@ public class JPEGLosslessDecoder implements DataStream {
 			outputRedData[(yLoc * xDim) + xLoc] = PRED[0];
 			outputGreenData[(yLoc * xDim) + xLoc] = PRED[1];
 			outputBlueData[(yLoc * xDim) + xLoc] = PRED[2];
-
 			xLoc++;
 
 			if (xLoc >= xDim) {
