@@ -10,7 +10,7 @@ This decoder can read data from the following DICOM transfer syntaxes:
 ###Usage
 ```java
 JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(compressedBytes);
-int[] decompressedData = decoder.decode();
+int[] decompressedData = decoder.decode()[0];  // single component
 ```
 
 ### Building
