@@ -19,4 +19,4 @@ ant build.xml
 ```
 
 ###Acknowledgments
-This decoder was originally written by Helmut Dersch, later released by JNode.  I added support for selection values 2 to 7.
+This decoder was originally written by Helmut Dersch.  I added support for selection values 2 to 7.
