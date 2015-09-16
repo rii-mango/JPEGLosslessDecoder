@@ -41,7 +41,6 @@ public class JPEGLosslessDecoder implements DataStream {
 	private final HuffmanTable huffTable;
 	private final QuantizationTable quantTable;
 	private final ScanHeader scan;
-	private final int DU[][][] = new int[10][4][64]; // at most 10 data units in a MCU, at most 4 data units in one component
 	private final int HuffTab[][][] = new int[4][2][MAX_HUFFMAN_SUBTREE * 256];
 	private final int IDCT_Source[] = new int[64];
 	private final int nBlock[] = new int[10]; // number of blocks in the i-th Comp in a scan
@@ -431,8 +430,6 @@ public class JPEGLosslessDecoder implements DataStream {
 						IDCT_Source[IDCT_P[j]] = getn(index, value & 0x0F, temp, index) * qtab[j];
 					}
 				}
-
-				scaleIDCT(DU[ctrC][i]);
 			}
 		}
 
@@ -734,103 +731,5 @@ public class JPEGLosslessDecoder implements DataStream {
 		}
 
 		return get16();
-	}
-
-
-
-	private void scaleIDCT(final int matrix[]) {
-		final int p[][] = new int[8][8];
-		int t0, t1, t2, t3, i;
-		int src0, src1, src2, src3, src4, src5, src6, src7;
-		int det0, det1, det2, det3, det4, det5, det6, det7;
-		int mindex = 0;
-
-		for (i = 0; i < 8; i++) {
-			src0 = IDCT_Source[(0 * 8) + i];
-			src1 = IDCT_Source[(1 * 8) + i];
-			src2 = IDCT_Source[(2 * 8) + i] - IDCT_Source[(3 * 8) + i];
-			src3 = IDCT_Source[(3 * 8) + i] + IDCT_Source[(2 * 8) + i];
-			src4 = IDCT_Source[(4 * 8) + i] - IDCT_Source[(7 * 8) + i];
-			src6 = IDCT_Source[(5 * 8) + i] - IDCT_Source[(6 * 8) + i];
-			t0 = IDCT_Source[(5 * 8) + i] + IDCT_Source[(6 * 8) + i];
-			t1 = IDCT_Source[(4 * 8) + i] + IDCT_Source[(7 * 8) + i];
-			src5 = t0 - t1;
-			src7 = t0 + t1;
-
-			det4 = (-src4 * 480) - (src6 * 192);
-			det5 = src5 * 384;
-			det6 = (src6 * 480) - (src4 * 192);
-			det7 = src7 * 256;
-			t0 = src0 * 256;
-			t1 = src1 * 256;
-			t2 = src2 * 384;
-			t3 = src3 * 256;
-			det3 = t3;
-			det0 = t0 + t1;
-			det1 = t0 - t1;
-			det2 = t2 - t3;
-
-			src0 = det0 + det3;
-			src1 = det1 + det2;
-			src2 = det1 - det2;
-			src3 = det0 - det3;
-			src4 = det6 - det4 - det5 - det7;
-			src5 = (det5 - det6) + det7;
-			src6 = det6 - det7;
-			src7 = det7;
-
-			p[0][i] = (src0 + src7 + (1 << 12)) >> 13;
-			p[1][i] = (src1 + src6 + (1 << 12)) >> 13;
-			p[2][i] = (src2 + src5 + (1 << 12)) >> 13;
-			p[3][i] = (src3 + src4 + (1 << 12)) >> 13;
-			p[4][i] = ((src3 - src4) + (1 << 12)) >> 13;
-			p[5][i] = ((src2 - src5) + (1 << 12)) >> 13;
-			p[6][i] = ((src1 - src6) + (1 << 12)) >> 13;
-			p[7][i] = ((src0 - src7) + (1 << 12)) >> 13;
-		}
-
-		for (i = 0; i < 8; i++) {
-			src0 = p[i][0];
-			src1 = p[i][1];
-			src2 = p[i][2] - p[i][3];
-			src3 = p[i][3] + p[i][2];
-			src4 = p[i][4] - p[i][7];
-			src6 = p[i][5] - p[i][6];
-			t0 = p[i][5] + p[i][6];
-			t1 = p[i][4] + p[i][7];
-			src5 = t0 - t1;
-			src7 = t0 + t1;
-
-			det4 = (-src4 * 480) - (src6 * 192);
-			det5 = src5 * 384;
-			det6 = (src6 * 480) - (src4 * 192);
-			det7 = src7 * 256;
-			t0 = src0 * 256;
-			t1 = src1 * 256;
-			t2 = src2 * 384;
-			t3 = src3 * 256;
-			det3 = t3;
-			det0 = t0 + t1;
-			det1 = t0 - t1;
-			det2 = t2 - t3;
-
-			src0 = det0 + det3;
-			src1 = det1 + det2;
-			src2 = det1 - det2;
-			src3 = det0 - det3;
-			src4 = det6 - det4 - det5 - det7;
-			src5 = (det5 - det6) + det7;
-			src6 = det6 - det7;
-			src7 = det7;
-
-			matrix[mindex++] = (src0 + src7 + (1 << 12)) >> 13;
-			matrix[mindex++] = (src1 + src6 + (1 << 12)) >> 13;
-			matrix[mindex++] = (src2 + src5 + (1 << 12)) >> 13;
-			matrix[mindex++] = (src3 + src4 + (1 << 12)) >> 13;
-			matrix[mindex++] = ((src3 - src4) + (1 << 12)) >> 13;
-			matrix[mindex++] = ((src2 - src5) + (1 << 12)) >> 13;
-			matrix[mindex++] = ((src1 - src6) + (1 << 12)) >> 13;
-			matrix[mindex++] = ((src0 - src7) + (1 << 12)) >> 13;
-		}
 	}
 }
