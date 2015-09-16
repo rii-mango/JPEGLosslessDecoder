@@ -2,30 +2,30 @@
  * Copyright (C) 2015 Michael Martinez
  * Changes: Added support for selection values 2-7, fixed minor bugs &
  * warnings, split into multiple class files, and general clean up.
- */
-
-/*
- * Copyright (C) 2003-2009 JNode.org
- * Original source: http://webuser.fh-furtwangen.de/~dersch/
- * Changed License to LGPL with the friendly permission of Helmut Dersch.
+ *
+ * 08-25-2015: Helmut Dersch agreed to a license change from LGPL to MIT.
  */
 
 /*
  * Copyright (C) Helmut Dersch
  *
- * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published
- * by the Free Software Foundation; either version 2.1 of the License, or
- * (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
- * License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library; If not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package edu.uthscsa.ric.volume.formats.jpeg;
@@ -63,9 +63,9 @@ public class JPEGLosslessDecoder implements DataStream {
 	private int[] outputBlueData;
 
 	private static final int IDCT_P[] = { 0, 5, 40, 16, 45, 2, 7, 42, 21, 56, 8, 61, 18, 47, 1, 4, 41, 23, 58, 13, 32, 24, 37, 10, 63, 17, 44, 3, 6, 43, 20,
-			57, 15, 34, 29, 48, 53, 26, 39, 9, 60, 19, 46, 22, 59, 12, 33, 31, 50, 55, 25, 36, 11, 62, 14, 35, 28, 49, 52, 27, 38, 30, 51, 54 };
+		57, 15, 34, 29, 48, 53, 26, 39, 9, 60, 19, 46, 22, 59, 12, 33, 31, 50, 55, 25, 36, 11, 62, 14, 35, 28, 49, 52, 27, 38, 30, 51, 54 };
 	private static final int TABLE[] = { 0, 1, 5, 6, 14, 15, 27, 28, 2, 4, 7, 13, 16, 26, 29, 42, 3, 8, 12, 17, 25, 30, 41, 43, 9, 11, 18, 24, 31, 40, 44, 53,
-			10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47, 50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63 };
+		10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47, 50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63 };
 
 	public static final int MAX_HUFFMAN_SUBTREE = 50;
 	public static final int MSB = 0x80000000;
@@ -556,7 +556,7 @@ public class JPEGLosslessDecoder implements DataStream {
 			}
 
 			result = temp[0] >> index[0];
-			temp[0] &= (mask >> (16 - index[0]));
+				temp[0] &= (mask >> (16 - index[0]));
 		} else {
 			temp[0] <<= 8;
 			input = get8();
@@ -601,7 +601,7 @@ public class JPEGLosslessDecoder implements DataStream {
 			}
 
 			result = temp[0] >> index[0];
-			temp[0] &= (mask >> (16 - index[0]));
+				temp[0] &= (mask >> (16 - index[0]));
 		}
 
 		if (result < (one << (n - 1))) {

@@ -10,7 +10,15 @@ This decoder can read data from the following DICOM transfer syntaxes:
 ###Usage
 ```java
 JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(compressedBytes);
-int[] decompressedData = decoder.decode()[0];  // single component
+
+// single component
+int[] decompressedData = decoder.decode()[0];  
+
+// rgb components
+final int[][] decompressedData = decoder.decode();
+final int[] redData = decompressedData[0];
+final int[] greenData = decompressedData[1];
+final int[] blueData = decompressedData[2];
 ```
 
 ### Building
@@ -19,4 +27,4 @@ ant build.xml
 ```
 
 ###Acknowledgments
-This decoder was originally written by Helmut Dersch, later released by JNode.  I added support for selection values 2 to 7.
+This decoder was originally written by Helmut Dersch.  I added support for selection values 2 to 7.
