@@ -48,6 +48,7 @@ public class JPEGLosslessDecoder implements DataStream {
 	private final int[] dcTab[] = new int[10][]; // dc HuffTab for the i-th Comp in a scan
 	private final int[] qTab[] = new int[10][]; // quantization table for the i-th Comp in a scan
 
+	private boolean restarting;
 	private int dataBufferIndex;
 	private int marker;
 	private int markerIndex;
@@ -63,10 +64,12 @@ public class JPEGLosslessDecoder implements DataStream {
 	private int[] outputBlueData;
 
 	private static final int IDCT_P[] = { 0, 5, 40, 16, 45, 2, 7, 42, 21, 56, 8, 61, 18, 47, 1, 4, 41, 23, 58, 13, 32, 24, 37, 10, 63, 17, 44, 3, 6, 43, 20,
-		57, 15, 34, 29, 48, 53, 26, 39, 9, 60, 19, 46, 22, 59, 12, 33, 31, 50, 55, 25, 36, 11, 62, 14, 35, 28, 49, 52, 27, 38, 30, 51, 54 };
+			57, 15, 34, 29, 48, 53, 26, 39, 9, 60, 19, 46, 22, 59, 12, 33, 31, 50, 55, 25, 36, 11, 62, 14, 35, 28, 49, 52, 27, 38, 30, 51, 54 };
 	private static final int TABLE[] = { 0, 1, 5, 6, 14, 15, 27, 28, 2, 4, 7, 13, 16, 26, 29, 42, 3, 8, 12, 17, 25, 30, 41, 43, 9, 11, 18, 24, 31, 40, 44, 53,
-		10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47, 50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63 };
+			10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47, 50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63 };
 
+	public static final int RESTART_MARKER_BEGIN = 0xFFD0;
+	public static final int RESTART_MARKER_END = 0xFFD7;
 	public static final int MAX_HUFFMAN_SUBTREE = 50;
 	public static final int MSB = 0x80000000;
 
@@ -251,6 +254,7 @@ public class JPEGLosslessDecoder implements DataStream {
 				}
 
 				for (int mcuNum = 0; mcuNum < restartInterval; mcuNum++) {
+					restarting = (mcuNum == 0);
 					current = decode(pred, temp, index);
 					output(pred);
 
@@ -268,7 +272,7 @@ public class JPEGLosslessDecoder implements DataStream {
 					}
 				}
 
-				if ((current >= 0xFFD0) && (current <= 0xFFD7)) {
+				if ((current >= RESTART_MARKER_BEGIN) && (current <= RESTART_MARKER_END)) {
 					//empty
 				} else {
 					break; //current=MARKER
@@ -315,37 +319,52 @@ public class JPEGLosslessDecoder implements DataStream {
 
 
 	private int decodeSingle(final int prev[], final int temp[], final int index[]) throws IOException {
-		switch (selection) {
-			case 2:
-				prev[0] = getPreviousY(outputData);
-				break;
-			case 3:
-				prev[0] = getPreviousXY(outputData);
-				break;
-			case 4:
-				prev[0] = (getPreviousX(outputData) + getPreviousY(outputData)) - getPreviousXY(outputData);
-				break;
-			case 5:
-				prev[0] = getPreviousX(outputData) + ((getPreviousY(outputData) - getPreviousXY(outputData)) >> 1);
-				break;
-			case 6:
-				prev[0] = getPreviousY(outputData) + ((getPreviousX(outputData) - getPreviousXY(outputData)) >> 1);
-				break;
-			case 7:
-				prev[0] = (int) (((long) getPreviousX(outputData) + getPreviousY(outputData)) / 2);
-				break;
-			default:
-				prev[0] = getPreviousX(outputData);
-				break;
+		//		At the beginning of the first line and
+		//		at the beginning of each restart interval the prediction value of 2P – 1 is used, where P is the input precision.
+		if (restarting) {
+			restarting = false;
+			prev[0] = (1 << (frame.getPrecision() - 1));
+		} else {
+			switch (selection) {
+				case 2:
+					prev[0] = getPreviousY(outputData);
+					break;
+				case 3:
+					prev[0] = getPreviousXY(outputData);
+					break;
+				case 4:
+					prev[0] = (getPreviousX(outputData) + getPreviousY(outputData)) - getPreviousXY(outputData);
+					break;
+				case 5:
+					prev[0] = getPreviousX(outputData) + ((getPreviousY(outputData) - getPreviousXY(outputData)) >> 1);
+					break;
+				case 6:
+					prev[0] = getPreviousY(outputData) + ((getPreviousX(outputData) - getPreviousXY(outputData)) >> 1);
+					break;
+				case 7:
+					prev[0] = (int) (((long) getPreviousX(outputData) + getPreviousY(outputData)) / 2);
+					break;
+				default:
+					prev[0] = getPreviousX(outputData);
+					break;
+			}
 		}
 
 		for (int i = 0; i < nBlock[0]; i++) {
 			final int value = getHuffmanValue(dcTab[0], temp, index);
+
 			if (value >= 0xFF00) {
 				return value;
 			}
 
-			prev[0] += getn(prev, value, temp, index);
+			int n = getn(prev, value, temp, index);
+
+			int nRestart = (n >> 8);
+			if ((nRestart >= RESTART_MARKER_BEGIN) && (nRestart <= RESTART_MARKER_END)) {
+				return nRestart;
+			}
+
+			prev[0] += n;
 		}
 
 		return 0;
@@ -556,7 +575,7 @@ public class JPEGLosslessDecoder implements DataStream {
 			}
 
 			result = temp[0] >> index[0];
-				temp[0] &= (mask >> (16 - index[0]));
+			temp[0] &= (mask >> (16 - index[0]));
 		} else {
 			temp[0] <<= 8;
 			input = get8();
@@ -601,7 +620,7 @@ public class JPEGLosslessDecoder implements DataStream {
 			}
 
 			result = temp[0] >> index[0];
-				temp[0] &= (mask >> (16 - index[0]));
+			temp[0] &= (mask >> (16 - index[0]));
 		}
 
 		if (result < (one << (n - 1))) {
