@@ -58,6 +58,7 @@ public class JPEGLosslessDecoder implements DataStream {
 	private int xDim, yDim;
 	private int xLoc;
 	private int yLoc;
+	private int mask;
 	private int[] outputData;
 	private int[] outputRedData;
 	private int[] outputGreenData;
@@ -195,6 +196,13 @@ public class JPEGLosslessDecoder implements DataStream {
 			}
 
 			final int precision = frame.getPrecision();
+
+			if (precision == 8) {
+				mask = 0xFF;
+			} else {
+				mask = 0xFFFF;
+			}
+
 			final ComponentSpec[] components = frame.getComponents();
 
 			scan.read(this);
@@ -357,9 +365,9 @@ public class JPEGLosslessDecoder implements DataStream {
 				return value;
 			}
 
-			int n = getn(prev, value, temp, index);
+			final int n = getn(prev, value, temp, index);
 
-			int nRestart = (n >> 8);
+			final int nRestart = (n >> 8);
 			if ((nRestart >= RESTART_MARKER_BEGIN) && (nRestart <= RESTART_MARKER_END)) {
 				return nRestart;
 			}
@@ -682,7 +690,7 @@ public class JPEGLosslessDecoder implements DataStream {
 
 	private void outputSingle(final int PRED[]) {
 		if ((xLoc < xDim) && (yLoc < yDim)) {
-			outputData[(yLoc * xDim) + xLoc] = PRED[0];
+			outputData[(yLoc * xDim) + xLoc] = mask & PRED[0];
 			xLoc++;
 
 			if (xLoc >= xDim) {
@@ -750,5 +758,17 @@ public class JPEGLosslessDecoder implements DataStream {
 		}
 
 		return get16();
+	}
+
+
+
+	public int getNumComponents() {
+		return numComp;
+	}
+
+
+
+	public int getPrecision() {
+		return frame.getPrecision();
 	}
 }
