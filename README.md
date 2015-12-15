@@ -27,4 +27,4 @@ ant build.xml
 ```
 
 ###Acknowledgments
-This decoder was originally written by Helmut Dersch.  I added support for selection values 2 to 7.
+This decoder was originally written by Helmut Dersch.  I have contributed bug fixes and added support for selection values 2 to 7.
