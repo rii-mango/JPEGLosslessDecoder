@@ -7,7 +7,7 @@ This decoder can read data from the following DICOM transfer syntaxes:
 - 1.2.840.10008.1.2.4.57    JPEG Lossless, Nonhierarchical (Processes 14)
 - 1.2.840.10008.1.2.4.70    JPEG Lossless, Nonhierarchical (Processes 14 [Selection 1])
 
-###Usage
+###Usage (raw stream)
 ```java
 JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(compressedBytes);
 
@@ -19,7 +19,18 @@ final int[][] decompressedData = decoder.decode();
 final int[] redData = decompressedData[0];
 final int[] greenData = decompressedData[1];
 final int[] blueData = decompressedData[2];
+
+
 ```
+###Usage (BufferedImage)
+```
+JPEGLosslessDecoderWrapper decoder = new JPEGLosslessDecoderWrapper();
+
+//currently supports 24 bit rgb, 16 & 8 bit grayscale
+BufferedImage image = decoder.readImage(compressedBytes);
+
+```
+
 
 ### Building
 ```unix
