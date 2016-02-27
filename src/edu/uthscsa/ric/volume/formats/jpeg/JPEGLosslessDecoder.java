@@ -771,4 +771,11 @@ public class JPEGLosslessDecoder implements DataStream {
 	public int getPrecision() {
 		return frame.getPrecision();
 	}
+	
+	public int getDimX(){
+		return frame.getDimX();
+	}
+	public int getDimY(){
+		return frame.getDimY();
+	}
 }
