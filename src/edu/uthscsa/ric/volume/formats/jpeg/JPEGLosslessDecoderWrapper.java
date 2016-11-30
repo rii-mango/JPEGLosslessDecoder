@@ -47,32 +47,21 @@ public class JPEGLosslessDecoderWrapper {
 		int width = decoder.getDimX();
 		int height = decoder.getDimY();
 		
-		if(decoder.getNumComponents() == 1){
-			switch(decoder.getPrecision())
-			{
-			case 8:
-				return read8Bit1ComponentGrayScale(decoded, width, height);
-			case 16:
-				return read16Bit1ComponentGrayScale(decoded, width, height);
-			default:
-				throw new IOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and 1 component cannot be decoded");
-			}
-		}
-		//rgb
-		if(decoder.getNumComponents() == 3){
-			switch(decoder.getPrecision())
-			{
-			case 24:
-				return read24Bit3ComponentRGB(decoded, width, height);
-
-			default:
-				throw new IOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and 3 components cannot be decoded");
-			}
-		}
-		
-		throw new IOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and " + decoder.getNumComponents() + " component(s) cannot be decoded");
-		
-	}
+        if (decoder.getNumComponents() == 1) {
+            if(decoder.getPrecision() <= 8){
+                return to8Bit1ComponentGrayScale(decoded, width, height);
+            }
+            if(decoder.getPrecision() <= 16){
+                return to16Bit1ComponentGrayScale(decoded, width, height);
+            }
+        }
+        if (decoder.getNumComponents() == 3){
+            if(decoder.getPrecision() <= 24){
+                return to24Bit3ComponentRGB(decoded, width, height);
+            }
+        }
+        throw new IOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and "+ decoder.getNumComponents() +" component(s) cannot be decoded");
+    }
 	
 	/**
 	 * converts the decoded buffer into a BufferedImage
