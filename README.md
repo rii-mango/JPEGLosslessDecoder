@@ -7,7 +7,7 @@ This decoder can read data from the following DICOM transfer syntaxes:
 - 1.2.840.10008.1.2.4.57    JPEG Lossless, Nonhierarchical (Processes 14)
 - 1.2.840.10008.1.2.4.70    JPEG Lossless, Nonhierarchical (Processes 14 [Selection 1])
 
-###Usage (raw stream)
+### Usage (raw stream)
 ```java
 JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(compressedBytes);
 
@@ -22,7 +22,7 @@ final int[] blueData = decompressedData[2];
 
 
 ```
-###Usage (BufferedImage)
+### Usage (BufferedImage)
 ```
 JPEGLosslessDecoderWrapper decoder = new JPEGLosslessDecoderWrapper();
 
@@ -37,5 +37,5 @@ BufferedImage image = decoder.readImage(compressedBytes);
 ant build.xml
 ```
 
-###Acknowledgments
+### Acknowledgments
 This decoder was originally written by Helmut Dersch.  I added support for selection values 2 through 7, contributed bug fixes and code cleanup.
