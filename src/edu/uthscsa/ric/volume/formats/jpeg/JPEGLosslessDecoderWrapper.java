@@ -63,6 +63,7 @@ public class JPEGLosslessDecoderWrapper {
 			switch(decoder.getPrecision())
 			{
 			case 24:
+                        case 8:
 				return read24Bit3ComponentRGB(decoded, width, height);
 
 			default:
